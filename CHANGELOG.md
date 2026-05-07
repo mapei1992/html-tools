@@ -5,6 +5,45 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.0.0] - 2026-05-07
+
+工具规模从 161 扩展到 999，并完成全站设计系统统一与 SEO 治理。
+
+### 新增
+
+- 工具集扩展到 999 个，覆盖 35 个分类（新增财务、健康、教育、美食、游戏、趣味、SEO、加密货币、法律合规、社交媒体、团队协作、办公效率、旅行、设计、数学、宠物等垂直领域）
+- 主页：实时搜索、收藏（localStorage）、最近使用、中英双语切换、明暗主题
+- PWA 离线支持（`sw.js` 预缓存核心资源 + offline.html）
+- 多平台自动部署（GitHub Pages / Vercel / Cloudflare Pages / Render / Surge）
+- `tools.json` 作为单一真相源，由 `npm run sync:tools` 同步到 `index.html`、`README.md`、`sitemap.xml`、`manifest.json`、`llms.txt`、GitHub 仓库描述
+- 1001+ 工具完整 E2E 测试覆盖（后续因 `tests/e2e/` 目录清理已移除）
+- `llms.txt` 用于大模型抓取友好的工具索引（按 popularity 自动生成）
+
+### 变更
+
+- 全站统一玻璃拟态设计系统（Glassmorphism）、字体（Space Grotesk + JetBrains Mono）、CSS 变量主题
+- 320+ 工具完成可访问性（formUsability）批量优化
+- 121 个工具补齐缺失的字体 CSS 变量
+- 9 个工具补齐 viewport meta
+- 分类合并和热门排序，CSS/JS 外部化（`assets/css/main.css`、`assets/js/main.js`）
+
+### 修复
+
+- 首页 JSON-LD FAQ 中"分享"双引号未转义，导致 Google Search Console 解析失败
+- meta description / OG / Twitter / FAQ / llms.txt 中工具数表述不一致（669+ / 152 / 583+ → 999+）
+- `llms.txt` 中 38 条改名工具死链（改为从 `tools.json` 动态生成）
+- `tools.json` 删除 22 组重复条目，本版本再去除 2 组跨分类重复（摩尔斯电码、资产折旧）并加 301 重定向
+- 958 个 HTMLHint 错误、stylelint / ESLint 警告
+- `vercel.json` 配合 `cleanUrls` 去掉 redirect 中的 `.html` 后缀
+- 修复搜索功能两个问题（#142）
+
+### 移除
+
+- 移除已不存在的 `tests/e2e/` 相关 12 个 npm 脚本和 2 个 devDep（puppeteer、serve-handler）
+- 移除 6 个 devDep 漏洞（npm audit fix）
+
+---
+
 ## [1.0.0] - 2025-12-27
 
 首个正式版本，包含 161 个纯前端工具。
