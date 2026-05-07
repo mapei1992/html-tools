@@ -171,7 +171,7 @@ function main() {
     readme: updateReadme(toolCount, categoryCount),
     sitemap: updateSitemap(tools, toolCount),
     manifest: updateManifest(toolCount),
-    llmsTxt: updateLlmsTxt(toolCount),
+    llmsTxt: updateLlmsTxt(toolCount, categories, groupedTools, sortedCategories),
     github: updateGitHubDescription(toolCount)
   };
 
@@ -378,29 +378,63 @@ function updateManifest(toolCount) {
 
 /**
  * 更新 llms.txt
+ *
+ * 内容由 tools.json 完整重生成：固定头部 + 每个分类取 popularity 最高的 N 个工具 + 固定尾部。
+ * 不再手工维护内部链接，避免工具改名/移动后产生死链。
  */
-function updateLlmsTxt(toolCount) {
+function updateLlmsTxt(toolCount, categories, groupedTools, sortedCategories) {
   try {
-    if (!fs.existsSync(LLMS_TXT)) {
+    const TOP_PER_CATEGORY = 6;
+
+    const header = `# WebUtils
+
+> WebUtils 是一个纯前端开发者工具集，包含 ${toolCount}+ 个实用工具。每个工具都是独立的 HTML 文件，内联 CSS/JS，无需构建，可离线使用。所有数据处理都在浏览器端完成，不上传服务器，保护用户隐私。
+
+WebUtils 提供开发者日常工作中常用的各类工具：JSON/YAML/XML 格式化与转换、Base64/URL/Unicode 编解码、时间戳与时区转换、二维码生成、图片压缩、正则表达式测试、哈希计算等。
+
+技术特点：
+
+- 单文件架构：每个工具是独立 HTML 文件
+- 零构建：无需 npm、webpack，直接打开使用
+- 可离线：下载到本地即可断网使用
+- 隐私安全：所有数据处理在浏览器端完成
+`;
+
+    const sections = [];
+    for (const catId of sortedCategories) {
+      const catTools = groupedTools[catId];
+      const catInfo = categories[catId];
+      if (!catTools || catTools.length === 0 || !catInfo) continue;
+
+      const top = [...catTools]
+        .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+        .slice(0, TOP_PER_CATEGORY);
+
+      const lines = top.map((t) => {
+        const desc = (t.description || t.name).replace(/\s+/g, ' ').trim();
+        return `- [${t.name}](${SITE_URL}/${t.path}): ${desc}`;
+      });
+
+      sections.push(`## ${catInfo.name}\n\n${lines.join('\n')}`);
+    }
+
+    const footer = `## Optional
+
+- [GitHub 仓库](https://github.com/chicogong/html-tools): 源代码、Issue 反馈、贡献指南
+- [完整工具列表](${SITE_URL}/): 首页查看全部 ${toolCount}+ 工具
+`;
+
+    const txt = `${header}\n${sections.join('\n\n')}\n\n${footer}`;
+
+    const existing = fs.existsSync(LLMS_TXT) ? fs.readFileSync(LLMS_TXT, 'utf8') : '';
+    if (existing === txt) {
+      console.log('⏭️  llms.txt: 无需更新');
       return false;
     }
 
-    let txt = fs.readFileSync(LLMS_TXT, 'utf8');
-    const original = txt;
-
-    txt = txt.replace(
-      /\d+\+?\s*个(纯前端实用|纯前端开发者|纯前端|实用|开发者)?\s*工具(集)?/g,
-      (_m, modifier, suffix) => `${toolCount}+ 个${modifier || ''}工具${suffix || ''}`
-    );
-
-    if (txt !== original) {
-      fs.writeFileSync(LLMS_TXT, txt);
-      console.log(`✅ llms.txt: ${toolCount}+ 工具`);
-      return true;
-    }
-
-    console.log('⏭️  llms.txt: 无需更新');
-    return false;
+    fs.writeFileSync(LLMS_TXT, txt);
+    console.log(`✅ llms.txt: ${toolCount}+ 工具，${sections.length} 个分类`);
+    return true;
   } catch (err) {
     console.log(`⚠️  llms.txt: ${err.message}`);
     return false;
